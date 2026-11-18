@@ -1,366 +1,226 @@
-/* =========================================================
-   JavaScript Quiz App
-   Features: one question at a time, score tracking, progress bar,
-   Next/Previous, review list, restart, dark/light mode (saved),
-   best score (saved), keyboard shortcuts (1-4 and Enter).
-   ========================================================= */
+// Run everything after the page has loaded
+document.addEventListener('DOMContentLoaded', () => {
 
-/* ===== 1. Quiz data =====
-   Each question is an object with:
-   - question: the text
-   - options: an array of 4 choices
-   - answer:   the index (0, 1, 2 or 3) of the correct option */
-const QUESTIONS = [
-  {
-    question: "Which HTML tag is used for the largest heading?",
-    options: ["<h6>", "<head>", "<h1>", "<heading>"],
-    answer: 2
-  },
-  {
-    question: "Which CSS property changes the text colour?",
-    options: ["font-color", "text-color", "color", "foreground"],
-    answer: 2
-  },
-  {
-    question: "Which keyword declares a variable that cannot be reassigned?",
-    options: ["var", "let", "const", "static"],
-    answer: 2
-  },
-  {
-    question: "What does DOM stand for?",
-    options: ["Document Object Model", "Data Object Model", "Digital Order Management", "Display Object Method"],
-    answer: 0
-  },
-  {
-    question: "Which array method adds an item to the end of an array?",
-    options: ["push()", "pop()", "shift()", "slice()"],
-    answer: 0
-  },
-  {
-    question: "Which method converts a JavaScript object into a JSON string?",
-    options: ["JSON.parse()", "JSON.stringify()", "JSON.convert()", "JSON.toText()"],
-    answer: 1
-  },
-  {
-    question: "Which method removes a single item from localStorage?",
-    options: ["localStorage.remove()", "localStorage.removeItem()", "localStorage.delete()", "localStorage.clear()"],
-    answer: 1
-  },
-  {
-    question: "Which CSS layout system arranges items in a single row or column?",
-    options: ["Flexbox", "Canvas", "Frames", "Marquee"],
-    answer: 0
-  },
-  {
-    question: "What does the strict equality operator (===) check?",
-    options: ["Only the value", "Only the type", "Both the value and the type", "Assigns a new value"],
-    answer: 2
-  },
-  {
-    question: "Which HTML tag is used for an unordered (bulleted) list?",
-    options: ["<ol>", "<ul>", "<li>", "<dl>"],
-    answer: 1
-  }
-];
+  // Tell the CSS that JavaScript is running (enables scroll animations)
+  document.documentElement.classList.add('js');
 
-/* ===== 2. Constants and state ===== */
-const THEME_KEY = "quizTheme";
-const BEST_KEY = "quizBestScore";
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// The state changes while the quiz runs.
-// answers[i] holds the chosen option index for question i, or null if not answered.
-const state = {
-  currentIndex: 0,
-  answers: []
-};
+  // Useful elements (each one is optional)
+  const navbar = document.getElementById('navbar');
+  const progress = document.getElementById('progress');
+  const hero = document.getElementById('home');
+  const heroTitle = document.querySelector('.hero-title');
+  const statement = document.querySelector('[data-scroll-text]');
 
-/* ===== 3. Element references ===== */
-const el = {
-  themeToggle: document.getElementById("theme-toggle"),
-  startScreen: document.getElementById("start-screen"),
-  quizScreen: document.getElementById("quiz-screen"),
-  resultScreen: document.getElementById("result-screen"),
-  bestScore: document.getElementById("best-score"),
-  startBtn: document.getElementById("start-btn"),
-  questionCounter: document.getElementById("question-counter"),
-  scoreLive: document.getElementById("score-live"),
-  progressBar: document.getElementById("progress-bar"),
-  questionText: document.getElementById("question-text"),
-  optionsContainer: document.getElementById("options"),
-  feedback: document.getElementById("feedback"),
-  prevBtn: document.getElementById("prev-btn"),
-  nextBtn: document.getElementById("next-btn"),
-  finalScore: document.getElementById("final-score"),
-  finalPercent: document.getElementById("final-percent"),
-  resultMessage: document.getElementById("result-message"),
-  resultBest: document.getElementById("result-best"),
-  reviewList: document.getElementById("review-list"),
-  restartBtn: document.getElementById("restart-btn")
-};
-
-/* ===== 4. Storage helpers =====
-   localStorage can be blocked (for example in some private modes).
-   These wrappers stop the app from crashing if that happens. */
-function readStorage(key) {
-  try {
-    return localStorage.getItem(key);
-  } catch (error) {
-    return null;
-  }
-}
-
-function writeStorage(key, value) {
-  try {
-    localStorage.setItem(key, value);
-  } catch (error) {
-    // Storage is unavailable. The app still works, the value just is not saved.
-  }
-}
-
-/* ===== 5. Theme (dark / light mode) ===== */
-function applyTheme(theme) {
-  document.documentElement.setAttribute("data-theme", theme);
-  const isDark = theme === "dark";
-  el.themeToggle.textContent = isDark ? "☀️" : "🌙";
-  el.themeToggle.setAttribute("aria-label", isDark ? "Switch to light mode" : "Switch to dark mode");
-}
-
-function toggleTheme() {
-  const currentTheme = document.documentElement.getAttribute("data-theme");
-  const newTheme = currentTheme === "dark" ? "light" : "dark";
-  applyTheme(newTheme);
-  writeStorage(THEME_KEY, newTheme);
-}
-
-/* ===== 6. Best score (saved in localStorage) ===== */
-// Returns the saved best score object, or null if there is none.
-function getBestScore() {
-  const raw = readStorage(BEST_KEY);
-  if (!raw) {
-    return null;
-  }
-  try {
-    return JSON.parse(raw);
-  } catch (error) {
-    return null;
-  }
-}
-
-// Saves the score only if it is higher than the current best.
-function saveBestScore(score, total) {
-  const percent = Math.round((score / total) * 100);
-  const best = getBestScore();
-  if (!best || percent > best.percent) {
-    writeStorage(BEST_KEY, JSON.stringify({ score, total, percent }));
-  }
-}
-
-// Returns the text to show for the best score.
-function formatBestScore(best) {
-  if (!best) {
-    return "No best score yet. Play to set one!";
-  }
-  return `Best score: ${best.score} / ${best.total} (${best.percent}%)`;
-}
-
-/* ===== 7. Screen switching ===== */
-function showScreen(screenToShow) {
-  [el.startScreen, el.quizScreen, el.resultScreen].forEach((screen) => {
-    screen.classList.add("hidden");
-  });
-  screenToShow.classList.remove("hidden");
-}
-
-/* ===== 8. Score calculation ===== */
-// Returns true if the answer to question i is correct.
-const isCorrect = (i) => state.answers[i] === QUESTIONS[i].answer;
-
-// Counts correct answers. Unanswered questions count as wrong.
-function calculateScore() {
-  return QUESTIONS.reduce((total, _question, i) => (isCorrect(i) ? total + 1 : total), 0);
-}
-
-/* ===== 9. Quiz flow ===== */
-function startQuiz() {
-  state.currentIndex = 0;
-  state.answers = QUESTIONS.map(() => null);
-  showScreen(el.quizScreen);
-  showQuestion();
-}
-
-// Draws the current question on the screen.
-function showQuestion() {
-  const index = state.currentIndex;
-  const question = QUESTIONS[index];
-  const total = QUESTIONS.length;
-
-  el.questionCounter.textContent = `Question ${index + 1} of ${total}`;
-  el.scoreLive.textContent = `Score: ${calculateScore()}`;
-  el.progressBar.style.width = `${(index / total) * 100}%`;
-  el.questionText.textContent = question.question;
-
-  // Create the option buttons dynamically from the data
-  el.optionsContainer.innerHTML = "";
-  question.options.forEach((optionText, optionIndex) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "option-btn";
-    button.textContent = `${optionIndex + 1}. ${optionText}`;
-    button.addEventListener("click", () => handleAnswer(optionIndex));
-    el.optionsContainer.appendChild(button);
-  });
-
-  // If this question was already answered (user went back), show that state again
-  const chosen = state.answers[index];
-  if (chosen !== null) {
-    showAnswerState(chosen);
-  } else {
-    el.feedback.textContent = "";
-    el.feedback.className = "feedback";
-  }
-
-  el.prevBtn.disabled = index === 0;
-  el.nextBtn.textContent = index === total - 1 ? "Finish" : "Next";
-}
-
-// Called when the user picks an option.
-function handleAnswer(optionIndex) {
-  // Stop a second answer for the same question
-  if (state.answers[state.currentIndex] !== null) {
-    return;
-  }
-  state.answers[state.currentIndex] = optionIndex;
-  showAnswerState(optionIndex);
-  el.scoreLive.textContent = `Score: ${calculateScore()}`;
-}
-
-// Colours the options, disables them, and shows the feedback message.
-function showAnswerState(chosen) {
-  const correctIndex = QUESTIONS[state.currentIndex].answer;
-  const buttons = el.optionsContainer.querySelectorAll(".option-btn");
-
-  buttons.forEach((button, i) => {
-    button.disabled = true;
-    if (i === correctIndex) {
-      button.classList.add("correct");
+  // ---------- 1. Split the About statement into words ----------
+  let words = [];
+  if (statement) {
+    const pieces = statement.textContent.trim().split(/\s+/);
+    statement.textContent = '';
+    words = pieces.map((piece) => {
+      const span = document.createElement('span');
+      span.className = 'word';
+      span.textContent = piece + ' ';
+      statement.appendChild(span);
+      return span;
+    });
+    if (reduceMotion) {
+      words.forEach((w) => (w.style.opacity = '1'));
     }
-    if (i === chosen && chosen !== correctIndex) {
-      button.classList.add("wrong");
-    }
+  }
+
+  // ---------- 2. Mobile menu ----------
+  const toggle = document.querySelector('.menu-toggle');
+  const navList = document.getElementById('nav-links');
+
+  if (toggle && navList) {
+    toggle.addEventListener('click', () => {
+      const isOpen = navList.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    navList.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', () => {
+        navList.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+
+  // ---------- 3. Highlight the menu link for the section on screen ----------
+  const navLinks = document.querySelectorAll('.nav-links a');
+  const sections = document.querySelectorAll('section[id]');
+
+  if (navLinks.length > 0 && 'IntersectionObserver' in window) {
+    const sectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          navLinks.forEach((link) => {
+            link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id);
+          });
+        }
+      });
+    }, { rootMargin: '-45% 0px -50% 0px' });
+
+    sections.forEach((section) => sectionObserver.observe(section));
+  }
+
+  // ---------- 4. Staggered entrance: children appear one after another ----------
+  document.querySelectorAll('.stagger').forEach((group) => {
+    [...group.children].forEach((child, index) => {
+      child.classList.add('reveal');
+      child.style.transitionDelay = `${index * 110}ms`;
+    });
   });
 
-  if (chosen === correctIndex) {
-    el.feedback.textContent = "Correct! 🎉";
-    el.feedback.className = "feedback good";
+  // Fade and slide elements in when they scroll into view
+  const revealElements = document.querySelectorAll('.reveal');
+
+  if ('IntersectionObserver' in window) {
+    const revealObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+
+    revealElements.forEach((el) => revealObserver.observe(el));
   } else {
-    el.feedback.textContent = `Wrong. The correct answer is: ${QUESTIONS[state.currentIndex].options[correctIndex]}`;
-    el.feedback.className = "feedback bad";
-  }
-}
-
-function nextQuestion() {
-  if (state.currentIndex === QUESTIONS.length - 1) {
-    showResult();
-    return;
-  }
-  state.currentIndex += 1;
-  showQuestion();
-}
-
-function prevQuestion() {
-  if (state.currentIndex > 0) {
-    state.currentIndex -= 1;
-    showQuestion();
-  }
-}
-
-/* ===== 10. Result screen ===== */
-// Returns a message based on the percentage.
-function getResultMessage(percent) {
-  if (percent === 100) {
-    return "Perfect score! Outstanding work!";
-  }
-  if (percent >= 70) {
-    return "Great job!";
-  }
-  if (percent >= 40) {
-    return "Good effort. Review your answers and try again.";
-  }
-  return "Try again. Practise the basics and you will improve!";
-}
-
-function showResult() {
-  const total = QUESTIONS.length;
-  const score = calculateScore();
-  const percent = Math.round((score / total) * 100);
-
-  saveBestScore(score, total);
-
-  el.finalScore.textContent = `Your score: ${score} / ${total}`;
-  el.finalPercent.textContent = `Percentage: ${percent}%`;
-  el.resultMessage.textContent = getResultMessage(percent);
-  el.resultBest.textContent = formatBestScore(getBestScore());
-
-  renderReview();
-  showScreen(el.resultScreen);
-}
-
-// Creates one review card per question.
-function renderReview() {
-  el.reviewList.innerHTML = "";
-
-  QUESTIONS.forEach((question, i) => {
-    const chosen = state.answers[i];
-
-    const item = document.createElement("div");
-    item.className = `review-item ${isCorrect(i) ? "good" : "bad"}`;
-
-    const title = document.createElement("p");
-    title.className = "review-question";
-    title.textContent = `${i + 1}. ${question.question}`;
-
-    const yourAnswer = document.createElement("p");
-    yourAnswer.textContent = `Your answer: ${chosen === null ? "Not answered" : question.options[chosen]}`;
-
-    const correctAnswer = document.createElement("p");
-    correctAnswer.textContent = `Correct answer: ${question.options[question.answer]}`;
-
-    item.append(title, yourAnswer, correctAnswer);
-    el.reviewList.appendChild(item);
-  });
-}
-
-/* ===== 11. Keyboard shortcuts =====
-   1-4 choose an option, Enter goes to Next.
-   Enter on a focused button is skipped here, because the browser
-   already clicks that button. This stops a question being skipped twice. */
-document.addEventListener("keydown", (event) => {
-  if (el.quizScreen.classList.contains("hidden")) {
-    return;
+    revealElements.forEach((el) => el.classList.add('visible'));
   }
 
-  const number = Number(event.key);
-  const optionCount = QUESTIONS[state.currentIndex].options.length;
+  // ---------- 5. Count-up numbers ----------
+  function countUp(el) {
+    const target = Number(el.dataset.target);
+    if (reduceMotion) {
+      el.textContent = target;
+      return;
+    }
+    el.textContent = '0';
+    const start = performance.now();
+    const duration = 1400;
 
-  if (Number.isInteger(number) && number >= 1 && number <= optionCount) {
-    handleAnswer(number - 1);
-  } else if (event.key === "Enter" && event.target.tagName !== "BUTTON") {
-    nextQuestion();
+    function frame(now) {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3); // slows down at the end
+      el.textContent = Math.round(target * eased);
+      if (t < 1) {
+        requestAnimationFrame(frame);
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  const counters = document.querySelectorAll('.count');
+  if ('IntersectionObserver' in window) {
+    const countObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          countUp(entry.target);
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.6 });
+
+    counters.forEach((el) => countObserver.observe(el));
+  }
+
+  // ---------- 6. Scroll effects (progress bar, navbar, parallax, word highlight) ----------
+  const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+  function onScroll() {
+    const y = window.scrollY;
+    const viewH = window.innerHeight;
+    const maxScroll = document.documentElement.scrollHeight - viewH;
+
+    // Progress bar at the top of the page
+    if (progress) {
+      progress.style.transform = `scaleX(${maxScroll > 0 ? y / maxScroll : 0})`;
+    }
+
+    // Navbar gets a stronger background after scrolling a little
+    if (navbar) {
+      navbar.classList.toggle('scrolled', y > 10);
+    }
+
+    // Hero title drifts up and fades as you scroll away (parallax)
+    if (heroTitle && !reduceMotion && y < viewH) {
+      heroTitle.style.transform = `translateY(${y * 0.25}px)`;
+      heroTitle.style.opacity = String(clamp(1 - y / (viewH * 0.7), 0, 1));
+    }
+
+    // About statement: each word lights up as the section moves up the screen
+    if (statement && words.length && !reduceMotion) {
+      const rect = statement.getBoundingClientRect();
+      const p = clamp((viewH * 0.9 - rect.top) / (viewH * 0.6), 0, 1);
+      words.forEach((word, i) => {
+        const amount = clamp(p * words.length - i, 0, 1);
+        word.style.opacity = String(0.2 + 0.8 * amount);
+      });
+    }
+  }
+
+  // Run the scroll code at most once per frame (keeps it smooth)
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      window.requestAnimationFrame(() => {
+        onScroll();
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive: true });
+
+  window.addEventListener('resize', onScroll);
+  onScroll();
+
+  // ---------- 7. Hero light follows the mouse (desktop only) ----------
+  if (hero && !reduceMotion && window.matchMedia('(pointer: fine)').matches) {
+    hero.addEventListener('pointermove', (event) => {
+      const rect = hero.getBoundingClientRect();
+      hero.style.setProperty('--x', `${event.clientX - rect.left}px`);
+      hero.style.setProperty('--y', `${event.clientY - rect.top}px`);
+    });
+  }
+
+  // ---------- 8. Contact form check (nothing is sent anywhere) ----------
+  const form = document.getElementById('contact-form');
+
+  if (form) {
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+
+      const status = document.getElementById('form-status');
+      const fields = form.querySelectorAll('input, textarea');
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      let allValid = true;
+
+      fields.forEach((field) => {
+        const value = field.value.trim();
+        const isValid = value !== '' && (field.type !== 'email' || emailPattern.test(value));
+        field.classList.toggle('invalid', !isValid);
+        if (!isValid) {
+          allValid = false;
+        }
+      });
+
+      if (!allValid) {
+        status.textContent = 'Please fill every field with a valid email address.';
+        return;
+      }
+
+      status.textContent = 'Thanks! Your message looks good. (This demo form does not send messages yet.)';
+      form.reset();
+    });
+  }
+
+  // ---------- 9. Footer year ----------
+  const year = document.getElementById('year');
+  if (year) {
+    year.textContent = new Date().getFullYear();
   }
 });
-
-/* ===== 12. Event listeners ===== */
-el.themeToggle.addEventListener("click", toggleTheme);
-el.startBtn.addEventListener("click", startQuiz);
-el.nextBtn.addEventListener("click", nextQuestion);
-el.prevBtn.addEventListener("click", prevQuestion);
-el.restartBtn.addEventListener("click", startQuiz);
-
-/* ===== 13. Start the app ===== */
-function init() {
-  applyTheme(readStorage(THEME_KEY) === "dark" ? "dark" : "light");
-  el.bestScore.textContent = formatBestScore(getBestScore());
-  showScreen(el.startScreen);
-}
-
-init();

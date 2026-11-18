@@ -1,69 +1,134 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="A browser-based multiple-choice quiz app built with HTML, CSS and JavaScript." />
-  <title>Web Dev Quiz</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Portfolio of Vighnesh Kalbhor, B.Tech Computer Science student.">
+  <title>Vighnesh Kalbhor | Portfolio</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="top-bar">
-    <h1>Web Dev Quiz</h1>
-    <button id="theme-toggle" class="theme-btn" type="button" aria-label="Switch to dark mode">🌙</button>
+
+  <!-- Scroll progress bar -->
+  <div class="progress" id="progress" aria-hidden="true"></div>
+
+  <!-- Navigation bar -->
+  <header class="navbar" id="navbar">
+    <div class="nav-inner">
+      <a class="brand" href="#home">Vighnesh Kalbhor</a>
+      <button class="menu-toggle" aria-expanded="false" aria-controls="nav-links">Menu</button>
+      <nav>
+        <ul class="nav-links" id="nav-links">
+          <li><a href="#home">Home</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#skills">Skills</a></li>
+          <li><a href="#projects">Projects</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+    </div>
   </header>
-           
-  <main class="container">
-    <!-- Screen 1: Start -->
-    <section id="start-screen" class="card screen">
-      <h2>Test your web development knowledge</h2>    
-      <p>Answer 10 multiple-choice questions and see your score at the end.</p>
-      <p id="best-score" class="best-score"></p>
-      <button id="start-btn" class="btn btn-primary" type="button">Start Quiz</button>
-      <p class="hint">Tip: press 1 to 4 to choose an answer, and Enter for Next.</p>
-    </section>
 
-    <!-- Screen 2: Quiz -->
-    <section id="quiz-screen" class="card screen hidden">
-      <div class="quiz-meta">
-        <span id="question-counter">Question 1 of 10</span>
-        <span id="score-live">Score: 0</span>
-      </div>
-
-      <div class="progress-track" aria-hidden="true">
-        <div id="progress-bar" class="progress-fill"></div>
-      </div>
-
-      <h2 id="question-text" class="question-text"></h2>
-      <div id="options" class="options"></div>
-
-      <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
-
-      <div class="nav-buttons">
-        <button id="prev-btn" class="btn btn-secondary" type="button">Previous</button>
-        <button id="next-btn" class="btn btn-primary" type="button">Next</button>
+  <main>
+    <!-- Hero -->
+    <section class="hero" id="home">
+      <p class="intro intro-anim" style="--d: 0.1s">B.Tech Computer Science, 3rd Semester</p>
+      <h1 class="hero-title intro-anim" style="--d: 0.25s">Vighnesh Kalbhor</h1>
+      <p class="hero-sub intro-anim" style="--d: 0.45s">Building websites and software, one step at a time.</p>
+      <div class="hero-actions intro-anim" style="--d: 0.6s">
+        <a class="btn btn-primary" href="#contact">Contact me</a>
+        <a class="link" href="#projects">See my work &rsaquo;</a>
       </div>
     </section>
 
-    <!-- Screen 3: Result -->
-    <section id="result-screen" class="card screen hidden">
-      <h2>Quiz Complete</h2>
-      <p id="final-score" class="final-score"></p>
-      <p id="final-percent" class="final-percent"></p>
-      <p id="result-message" class="result-message"></p>
-      <p id="result-best" class="best-score"></p>
+    <!-- About (dark) -->
+    <section class="section dark" id="about">
+      <div class="container">
+        <p class="statement" data-scroll-text>I am a B.Tech Computer Science student. I enjoy programming, and I am learning web development, databases and software engineering. I build small projects to practise what I learn in class.</p>
 
-      <h3>Review your answers</h3>
-      <div id="review-list" class="review-list"></div>
+        <ul class="stats stagger">
+          <li>
+            <span class="count" data-target="3">3</span>
+            <small>Semester</small>
+          </li>
+          <li>
+            <span class="count" data-target="8">8</span>
+            <small>Skills</small>
+          </li>
+          <li>
+            <span class="count" data-target="2">2</span>
+            <small>Projects</small>
+          </li>
+        </ul>
+      </div>
+    </section>
 
-      <button id="restart-btn" class="btn btn-primary" type="button">Restart Quiz</button>
+    <!-- Skills (light) -->
+    <section class="section light" id="skills">
+      <div class="container">
+        <h2 class="section-title reveal">Skills</h2>
+        <p class="section-sub reveal">The tools I use and the languages I am learning.</p>
+        <ul class="skill-grid stagger">
+          <li class="skill-tile">HTML</li>
+          <li class="skill-tile">CSS</li>
+          <li class="skill-tile">JavaScript</li>
+          <li class="skill-tile">C</li>
+          <li class="skill-tile">C++</li>
+          <li class="skill-tile">Java</li>
+          <li class="skill-tile">Python</li>
+          <li class="skill-tile">Git and GitHub</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Projects (dark) -->
+    <section class="section dark" id="projects">
+      <div class="container">
+        <h2 class="section-title reveal">Projects</h2>
+        <p class="section-sub reveal">Small things I have built while learning.</p>
+        <div class="project-grid stagger">
+          <article class="project-card card-blue">
+            <h3>Portfolio website</h3>
+            <p>This page, built with HTML, CSS and JavaScript. It uses Git branches for the navbar and footer.</p>
+            <a class="link" href="#contact">Ask me about it &rsaquo;</a>
+          </article>
+          <article class="project-card card-warm">
+            <h3>Your next project</h3>
+            <p>Write one line about what the project does and what you learned from it.</p>
+            <a class="link" href="#contact">Ask me about it &rsaquo;</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact (light) -->
+    <section class="section light" id="contact">
+      <div class="container narrow">
+        <h2 class="section-title reveal">Get in touch</h2>
+        <p class="section-sub reveal">Send a message and I will get back to you.</p>
+        <form id="contact-form" class="contact-form reveal" novalidate>
+          <label for="name">Name</label>
+          <input id="name" type="text" autocomplete="name" required>
+
+          <label for="email">Email</label>
+          <input id="email" type="email" autocomplete="email" required>
+
+          <label for="message">Message</label>
+          <textarea id="message" rows="4" required></textarea>
+
+          <button type="submit" class="btn btn-primary">Send message</button>
+          <p id="form-status" role="status"></p>
+        </form>
+      </div>
     </section>
   </main>
 
+  <!-- Footer -->
   <footer class="footer">
-    <p>Built with HTML, CSS and JavaScript</p>
+    <p>Copyright &copy; <span id="year"></span> Vighnesh Kalbhor. Built with HTML, CSS and JavaScript.</p>
   </footer>
 
   <script src="script.js"></script>
 </body>
 </html>
+
